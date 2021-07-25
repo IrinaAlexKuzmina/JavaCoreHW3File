@@ -54,20 +54,17 @@ public class Main {
         }
     }
 
-    public static void zipFiles(String path, String zipName) {
-        File dir = new File(path);
-        if (!dir.isDirectory()) return;
+    public static void zipFiles(String zipPath, String[] filePaths) {
 
         try (ZipOutputStream zipOut = new ZipOutputStream(new
-                FileOutputStream(path + "//" + zipName))) {
+                FileOutputStream(zipPath))) {
 
-            for (File item : dir.listFiles()) {
+            for (String fileName : filePaths) {
+                File file = new File(fileName);
+                if (file.isDirectory()) continue;
 
-                if (item.isDirectory()) continue;
-                if (zipName.equals(item.getName())) continue;
-
-                try (FileInputStream fileInputStream = new FileInputStream(item.getAbsolutePath())) {
-                    ZipEntry entry = new ZipEntry(item.getName());
+                try (FileInputStream fileInputStream = new FileInputStream(fileName)) {
+                    ZipEntry entry = new ZipEntry(file.getName());
                     zipOut.putNextEntry(entry);
                     byte[] buffer = new byte[fileInputStream.available()];
                     fileInputStream.read(buffer);
@@ -81,17 +78,21 @@ public class Main {
             System.out.println(ex.getMessage());
         }
 
-        for (File item : dir.listFiles()) {
-            if (zipName.equals(item.getName())) continue;
-            if (!item.delete()) System.out.println("Не могу удалить " + item.getName());
+        for (String fileName : filePaths) {
+            File file = new File(fileName);
+            if (!file.delete()) System.out.println("Не могу удалить " + fileName);
         }
     }
 
-    public static void saveGames(List<GameProgress> gpList, String path, String fileName) {
+    public static String[] saveGames(List<GameProgress> gpList, String path, String fileName) {
+        String[] arrFileNames = new String[gpList.size()];
         int i = 0;
         for (GameProgress gameProgress : gpList) {
-            gameProgress.saveGame(path + "//" + fileName + (i++) + ".dat");
+            arrFileNames[i] = path + "//" + fileName + i + ".dat";
+            gameProgress.saveGame(arrFileNames[i]);
+            i++;
         }
+        return arrFileNames;
     }
 
     public static void openZip(String fullFileName, String path) {
@@ -134,8 +135,7 @@ public class Main {
         final String zipPath = "Games//saveGames";
         final String fileName = "save";
 
-        saveGames(gpList, zipPath, fileName);
-        zipFiles(zipPath, zipName);
+        zipFiles(zipPath + "//" + zipName, saveGames(gpList, zipPath, fileName));
         openZip(zipPath + "//" + zipName, zipPath);
         if (gpList.size() != 0) System.out.println(openProgress(zipPath + "//" + fileName + "0.dat"));
     }
